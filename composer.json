@@ -10,6 +10,6 @@
     "minimum-stability": "dev",
     "require": {},
     "autoload": {
-        "psr-0": {"Longway\\Express\\": "src/"}
+        "psr-4": {"Longway\\Express\\": "src/"}
     }
 }
