@@ -1,0 +1,15 @@
+{
+    "name": "longway/express",
+    "description": "express",
+    "authors": [
+        {
+            "name": "lkg",
+            "email": "linkanggui1@gmail.com"
+        }
+    ],
+    "minimum-stability": "dev",
+    "require": {},
+    "autoload": {
+        "psr-0": {"Longway\\Express\\": "src/"}
+    }
+}
