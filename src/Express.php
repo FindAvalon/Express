@@ -4,13 +4,40 @@ namespace Longway\Express;
 
 class Express
 {
-    const GET_TYPE_URL = 'https://www.kuaidi100.com/all/';
+    const GET_SELLER_URL = 'https://www.kuaidi100.com/all/';
+
+    const SELECT_URL = 'https://www.kuaidi100.com/query';
 
     protected $timeout;
 
     public function __construct($timeout = 600)
     {
         $this->timeout = $timeout;
+    }
+
+    public function select($seller, $postId)
+    {
+        $data = [
+            'type'      => $seller,
+            'postid'    => $postId,
+            'id'        => 1,
+            'valicode'  => '',
+            'temp'      => mt_rand(0, time()) / time()
+        ];
+
+        $url = self::SELECT_URL.'?'.http_build_query($data);
+
+        var_dump($url);
+
+        $result = $this->curl($url);
+
+        $result = json_decode($result, true);
+
+        if (isset($result['message']) && isset($result['data']) && $result['message'] == 'ok') {
+            return $result['data'];
+        }
+        throw new \Exception($result['message']);
+
     }
 
     private function curl($url)
@@ -27,10 +54,10 @@ class Express
         return $result;
     }
 
-    public function getType()
+    public function getSeller()
     {
         //获取原始数据
-        $result = $this->curl(self::GET_TYPE_URL);
+        $result = $this->curl(self::GET_SELLER_URL);
 
         $startSign = 'href="';
         $endSign = '"';
