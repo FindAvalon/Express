@@ -10,6 +10,9 @@ class Express
 
     protected $timeout;
 
+    protected $sellers = [];
+    protected $sellerLinks = [];
+
     public function __construct($timeout = 600)
     {
         $this->timeout = $timeout;
@@ -17,8 +20,15 @@ class Express
 
     public function select($seller, $postId)
     {
+
+        if ( count($this->sellers) == 0  ) {
+            $this->getSeller();
+        }
+
+        $code = $this->getCompanyCode($seller);
+
         $data = [
-            'type'      => $seller,
+            'type'      => $code,
             'postid'    => $postId,
             'id'        => 1,
             'valicode'  => '',
@@ -26,8 +36,6 @@ class Express
         ];
 
         $url = self::SELECT_URL.'?'.http_build_query($data);
-
-        var_dump($url);
 
         $result = $this->curl($url);
 
@@ -70,6 +78,7 @@ class Express
         preg_match_all('/<a[\w\W]+<\/a>/U', $result, $typeList);
 
         $data = [];
+        $links = [];
         foreach ($typeList[0] as $k => $v) {
 
             if ( $startIndex = strpos($v, $startSign) ) {
@@ -90,9 +99,67 @@ class Express
                 $value = substr($v, $valueStartIndex, $valueEndIndex - $valueStartIndex);
 
                 $data[$key] = $value;
+                $links[] = [
+                    'name' => $value,
+                    'link' => $href
+                ];
             }
         }
+        $this->sellerLinks = $links;
 
-        return $data;
+        return array_values($data);
+    }
+
+    private function sellerCodeExists($seller)
+    {
+        if ( $code = array_search($seller, $this->sellers) ) {
+            return $code;
+        }
+        return false;
+    }
+
+    public function getCompanyCode($seller)
+    {
+        if ( $code = $this->sellerCodeExists($seller) ) {
+            return $code;
+        }
+
+
+        $startSign = 'id="companyCode"';
+        $endSign = "<font";
+
+        $result = array_filter($this->sellerLinks, function ($item) use ($seller) {
+            return $item['name'] == $seller;
+        });
+
+        if ( count($result) != 1 ) {
+            throw new \Exception("不存在指定seller");
+        }
+
+        $link = array_pop($result)['link'];
+
+        $result = $this->curl($link);
+
+        preg_match("/{$startSign}[\w\W]+{$endSign}/", $result, $companyCodeHtml);
+
+        if ( count($companyCodeHtml) == 0 ) {
+            throw new \Exception("不存在指定seller");
+        }
+        $companyCodeHtml = $companyCodeHtml[0];
+        // var_dump($result);
+        if ( strlen($companyCodeHtml) == 0 ) {
+            throw new \Exception("不存在指定seller");
+        }
+
+        if ( $startIndex = strpos($companyCodeHtml, 'value="') ) {
+            $startIndex += strlen('value="');
+            $endIndex = strpos($companyCodeHtml, '"', $startIndex);
+            if ( $code = substr($companyCodeHtml, $startIndex, $endIndex - $startIndex) ) {
+                $this->sellers[$code] = $seller;
+                return $code;
+            }
+
+        }
+        throw new \Exception("不存在指定seller");
     }
 }
